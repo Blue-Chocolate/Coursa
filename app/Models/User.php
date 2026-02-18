@@ -2,47 +2,74 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'is_admin',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password'          => 'hashed',
+        'is_admin'          => 'boolean',
+    ];
+
+    // ── Relationships ─────────────────────────────────────────────────────────
+    public function enrollments(): HasMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Enrollment::class);
+    }
+
+    public function lessonProgress(): HasMany
+    {
+        return $this->hasMany(LessonProgress::class);
+    }
+
+    public function courseCompletions(): HasMany
+    {
+        return $this->hasMany(CourseCompletion::class);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    public function isAdmin(): bool
+    {
+        return $this->is_admin;
+    }
+
+    public function isEnrolledIn(int $courseId): bool
+    {
+        // Cache per-request to avoid N+1 on lesson lists
+        return $this->enrollments()
+            ->where('course_id', $courseId)
+            ->exists();
+    }
+
+    public function hasCompletedCourse(int $courseId): bool
+    {
+        return $this->courseCompletions()
+            ->where('course_id', $courseId)
+            ->exists();
+    }
+
+    public function progressForLesson(int $lessonId): ?LessonProgress
+    {
+        return $this->lessonProgress()
+            ->where('lesson_id', $lessonId)
+            ->first();
     }
 }

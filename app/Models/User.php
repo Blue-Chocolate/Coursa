@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Filament\Panel;
+use Filament\Models\Contracts\FilamentUser;
+
 
 class User extends Authenticatable
 {
@@ -71,5 +74,9 @@ class User extends Authenticatable
         return $this->lessonProgress()
             ->where('lesson_id', $lessonId)
             ->first();
+    }
+        public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_admin;
     }
 }

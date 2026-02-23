@@ -56,8 +56,6 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->authorization(function (): bool {
-    return auth()->user()?->isAdmin() ?? false;
-});
+            ;
     }
 }

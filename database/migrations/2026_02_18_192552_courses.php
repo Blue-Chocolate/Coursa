@@ -12,7 +12,6 @@ return new class extends Migration {
             $table->string('title');
             $table->string('slug')->unique();
             $table->decimal('price', 8, 2)->default(0.00);
-            $table->foreignId('level_id')->nullable();
             $table->text('description')->nullable();
             $table->string('image')->nullable();
             $table->enum('status', ['draft', 'published'])->default('draft');

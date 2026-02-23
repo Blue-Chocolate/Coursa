@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Livewire\Course;
+
+use App\Actions\EnrollUserAction;
+use App\Models\Course;
+use App\Repositories\EnrollmentRepository;
+use Livewire\Component;
+
+class EnrollButton extends Component
+{
+    public Course $course;
+    public bool   $isEnrolled;
+
+    public function mount(Course $course, bool $isEnrolled): void
+    {
+        $this->course     = $course;
+        $this->isEnrolled = $isEnrolled;
+    }
+
+    public function enroll(): void
+    {
+        if (! auth()->check()) {
+            $this->redirectRoute('login');
+            return;
+        }
+
+        try {
+            app(EnrollUserAction::class)->execute(auth()->user(), $this->course);
+            $this->isEnrolled = true;
+            $this->dispatch('enrolled'); // notify parent components
+        } catch (\Exception $e) {
+            session()->flash('error', $e->getMessage());
+        }
+    }
+
+    public function render()
+    {
+        return view('livewire.course.enroll-button');
+    }
+}

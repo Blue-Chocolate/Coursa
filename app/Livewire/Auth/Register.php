@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Auth;
 
-use App\Actions\RegisterUserAction;
+use App\Actions\Auth\RegisterUserAction;
 use Livewire\Attributes\Rule;
 use Livewire\Component;
 

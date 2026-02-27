@@ -53,64 +53,106 @@
         </div>
     </div>
 
-    {{-- Lesson accordion --}}
-    <div x-data="{ open: null }">
-        <h2 class="text-xl font-bold mb-5 text-zinc-900 dark:text-zinc-100">Course Content</h2>
-
-        <div class="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800">
-            @foreach($course->lessons as $index => $lesson)
-                @php
-                    $isCompleted  = $completedIds->contains($lesson->id);
-                    $isAccessible = $lesson->is_free_preview || $isEnrolled;
-                @endphp
-
-                <div>
-                    <button @click="open === {{ $index }} ? open = null : open = {{ $index }}"
-                            class="w-full flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left">
-
-                        <span class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm
-                            {{ $isCompleted ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400' }}">
-                            {{ $isCompleted ? '✓' : $index + 1 }}
-                        </span>
-
-                        <span class="flex-1 font-medium text-sm text-zinc-800 dark:text-zinc-200">{{ $lesson->title }}</span>
-
-                        <div class="flex items-center gap-3 text-xs text-zinc-400">
-                            @if($lesson->is_free_preview)
-                                <span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-semibold">Preview</span>
-                            @elseif(!$isEnrolled)
-                                <span>🔒</span>
-                            @endif
-                            @if($lesson->duration_seconds)
-                                <span>{{ gmdate('i:s', $lesson->duration_seconds) }}</span>
-                            @endif
-                            <svg class="w-4 h-4 transition-transform duration-200"
-                                 :class="open === {{ $index }} ? 'rotate-180' : ''"
-                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </div>
-                    </button>
-
-                    <div x-show="open === {{ $index }}"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 -translate-y-1"
-                         x-transition:enter-end="opacity-100 translate-y-0"
-                         x-transition:leave="transition ease-in duration-150"
-                         x-transition:leave-end="opacity-0"
-                         class="px-5 pb-4 pl-16 text-sm text-zinc-500 dark:text-zinc-400">
-                        @if($isAccessible)
-                            <a href="{{ route('lesson.show', [$course->slug, $lesson->id]) }}"
-                               class="inline-flex items-center gap-2 text-amber-500 hover:text-amber-400 font-semibold mt-1 transition-colors">
-                                ▶ {{ $isCompleted ? 'Rewatch Lesson' : 'Watch Lesson' }}
-                            </a>
-                        @else
-                            <p class="mt-1">Enroll in this course to unlock this lesson.</p>
-                        @endif
-                    </div>
-                </div>
-            @endforeach
-        </div>
+  {{-- Lesson accordion --}}
+<div x-data="{
+    open: null,
+    completedIds: {{ $completedIds->values()->toJson() }},
+    toggle(i) { this.open = this.open === i ? null : i }
+}">
+    <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-bold text-zinc-900 dark:text-zinc-100">Course Content</h2>
+        <span class="text-sm text-zinc-400">
+            {{ $course->lessons->count() }} lessons
+            @if($isEnrolled)
+                ·
+                <span class="text-amber-500 font-semibold">{{ $completionPct }}% complete</span>
+            @endif
+        </span>
     </div>
 
+    <div class="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden divide-y divide-zinc-200 dark:divide-zinc-800">
+        @foreach($course->lessons as $index => $lesson)
+            @php
+                $isAccessible = $lesson->is_free_preview || $isEnrolled;
+            @endphp
+
+            <div :class="open === {{ $index }} ? 'bg-amber-50 dark:bg-amber-950/20' : ''">
+
+                {{-- Header row --}}
+                <button
+                    @click="toggle({{ $index }})"
+                    class="w-full flex items-center gap-4 px-5 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors text-left group"
+                >
+                    {{-- Completion indicator --}}
+                    <span
+                        class="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-300"
+                        :class="completedIds.includes({{ $lesson->id }})
+                            ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'"
+                    >
+                        <span x-show="completedIds.includes({{ $lesson->id }})">✓</span>
+                        <span x-show="!completedIds.includes({{ $lesson->id }})">{{ $index + 1 }}</span>
+                    </span>
+
+                    {{-- Title --}}
+                    <span class="flex-1 font-medium text-sm text-zinc-800 dark:text-zinc-200 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 transition-colors">
+                        {{ $lesson->title }}
+                    </span>
+
+                    {{-- Meta + chevron --}}
+                    <div class="flex items-center gap-3 text-xs text-zinc-400 flex-shrink-0">
+                        @if($lesson->is_free_preview)
+                            <span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-semibold">
+                                Preview
+                            </span>
+                        @elseif(!$isEnrolled)
+                            <span title="Enroll to unlock">🔒</span>
+                        @endif
+
+                        @if($lesson->duration_seconds)
+                            <span>{{ gmdate('i:s', $lesson->duration_seconds) }}</span>
+                        @endif
+
+                        <svg
+                            class="w-4 h-4 transition-transform duration-300"
+                            :class="open === {{ $index }} ? 'rotate-180 text-amber-500' : ''"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </button>
+
+                {{-- Expandable body --}}
+                <div
+                    x-show="open === {{ $index }}"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0 -translate-y-1"
+                    x-transition:enter-end="opacity-100 translate-y-0"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="opacity-100 translate-y-0"
+                    x-transition:leave-end="opacity-0 -translate-y-1"
+                    class="px-5 pb-4 pl-16"
+                >
+                    @if($isAccessible)
+                        <a
+                            href="{{ route('lesson.show', [$course->slug, $lesson->id]) }}"
+                            class="inline-flex items-center gap-2 text-sm text-amber-500 hover:text-amber-400 font-semibold mt-1 transition-colors"
+                        >
+                            ▶
+                            <span
+                                x-text="completedIds.includes({{ $lesson->id }}) ? 'Rewatch Lesson' : 'Watch Lesson'"
+                            ></span>
+                        </a>
+                    @else
+                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                            Enroll in this course to unlock this lesson.
+                        </p>
+                    @endif
+                </div>
+
+            </div>
+        @endforeach
+    </div>
+</div>
 </div>

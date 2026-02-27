@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('components.layouts.app')
 @section('title', 'All Courses')
 @section('content')
     <livewire:home.course-list />

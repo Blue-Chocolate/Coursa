@@ -2,92 +2,96 @@
 
 namespace App\Filament\Resources\CourseResource\RelationManagers;
 
-use Filament\Forms;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\CreateAction;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
 class LessonsRelationManager extends RelationManager
 {
     protected static string $relationship = 'lessons';
-    protected static ?string $title = 'Lessons';
+    protected static ?string $title       = 'Lessons';
 
     public function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('title')
+            TextInput::make('title')
                 ->required()
                 ->maxLength(255)
-                ->columnSpan(2),
+                ->columnSpanFull(),
 
-            Forms\Components\TextInput::make('video_url')
+            TextInput::make('video_url')
                 ->label('Video URL')
                 ->url()
                 ->required()
-                ->placeholder('https://www.youtube.com/watch?v=...')
-                ->columnSpan(2),
+                ->columnSpanFull(),
 
-            Forms\Components\TextInput::make('order')
+            TextInput::make('order')
                 ->numeric()
                 ->default(fn () => $this->getOwnerRecord()->lessons()->max('order') + 1)
                 ->required(),
 
-            Forms\Components\TextInput::make('duration_seconds')
+            TextInput::make('duration_seconds')
                 ->label('Duration (seconds)')
-                ->numeric()
-                ->nullable(),
+                ->numeric(),
 
-            Forms\Components\Toggle::make('is_free_preview')
-                ->label('Free Preview')
-                ->helperText('Guests can watch this lesson without enrolling')
-                ->columnSpan(2),
+            Toggle::make('is_free_preview')
+                ->label('Free Preview'),
+
+            Textarea::make('description')
+                ->rows(2)
+                ->columnSpanFull(),
         ])->columns(2);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('title')
+            ->reorderable('order')          // ← drag handle column, updates 'order' field
             ->defaultSort('order')
-            ->reorderable('order') // drag-and-drop reorder
             ->columns([
-                Tables\Columns\TextColumn::make('order')
-                    ->width(60)
-                    ->sortable(),
+                TextColumn::make('order')
+                    ->label('#')
+                    ->sortable()
+                    ->alignCenter()
+                    ->width('50px'),
 
-                Tables\Columns\TextColumn::make('title')
-                    ->searchable(),
+                TextColumn::make('title')
+                    ->searchable()
+                    ->limit(50),
 
-                Tables\Columns\TextColumn::make('duration_seconds')
+                TextColumn::make('duration_seconds')
                     ->label('Duration')
-                    ->formatStateUsing(function (?int $state): string {
-                        if (! $state) return '—';
-                        $m = intdiv($state, 60);
-                        $s = $state % 60;
-                        return "{$m}m {$s}s";
-                    }),
+                    ->formatStateUsing(fn ($state) => $state
+                        ? gmdate('G:i:s', $state)
+                        : '—'
+                    )
+                    ->alignCenter(),
 
-                Tables\Columns\IconColumn::make('is_free_preview')
-                    ->label('Free Preview')
-                    ->boolean(),
+                IconColumn::make('is_free_preview')
+                    ->label('Preview')
+                    ->boolean()
+                    ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('progress_count')
+                TextColumn::make('progress_count')
+                    ->label('Completions')
                     ->counts('progress')
-                    ->label('Started By')
-                    ->badge(),
+                    ->alignCenter(),
             ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
-            ])
+            ->headerActions([CreateAction::make()])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+            ->bulkActions([BulkActionGroup::make([DeleteBulkAction::make()])]);
     }
 }

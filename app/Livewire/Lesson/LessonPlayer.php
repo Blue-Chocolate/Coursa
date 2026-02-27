@@ -2,15 +2,15 @@
 
 namespace App\Livewire\Lesson;
 
-use App\Actions\MarkLessonCompletedAction;
-use App\Actions\RecordLessonStartedAction;
+use App\Actions\Lesson\MarkLessonCompletedAction;
+use App\Actions\Lesson\RecordLessonStartedAction;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.app')]
+#[Layout('components.layouts.app')]
 class LessonPlayer extends Component
 {
     public Course  $course;

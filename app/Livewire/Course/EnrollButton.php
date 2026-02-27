@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Course;
 
-use App\Actions\EnrollUserAction;
+use App\Actions\Enrollment\EnrollUserAction;
 use App\Models\Course;
 use Livewire\Component;
 

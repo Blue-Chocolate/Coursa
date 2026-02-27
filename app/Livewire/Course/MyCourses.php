@@ -6,12 +6,11 @@ use App\Models\LessonProgress;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.app')]
+#[Layout('components.layouts.app')]
 class MyCourses extends Component
 {
     public function mount(): void
     {
-        // Redirect guests — belt and suspenders alongside route middleware
         if (! auth()->check()) {
             $this->redirect(route('login'));
         }
@@ -26,9 +25,9 @@ class MyCourses extends Component
             ->latest('enrolled_at')
             ->get()
             ->map(function ($enrollment) use ($user) {
-                $course      = $enrollment->course;
-                $lessonIds   = $course->lessons->pluck('id');
-                $total       = $lessonIds->count();
+                $course    = $enrollment->course;
+                $lessonIds = $course->lessons->pluck('id');
+                $total     = $lessonIds->count();
 
                 $completedIds = LessonProgress::where('user_id', $user->id)
                     ->whereIn('lesson_id', $lessonIds)
@@ -49,6 +48,6 @@ class MyCourses extends Component
                 return $enrollment;
             });
 
-        return view('livewire.course.my-courses', compact('enrollments'));
+        return view('pages.my-courses', compact('enrollments'));
     }
 }

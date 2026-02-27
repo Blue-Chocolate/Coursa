@@ -7,7 +7,7 @@ use App\Models\LessonProgress;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('layouts.app')]
+#[Layout('components.layouts.app')]
 class CourseDetail extends Component
 {
     public Course $course;

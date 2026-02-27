@@ -2,45 +2,60 @@
 
 namespace App\Filament\Resources\UserResource\RelationManagers;
 
-use App\Models\Course;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables;
-use Filament\Tables\Table;
+use App\Models\LessonProgress;
 use Filament\Forms\Form;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class EnrollmentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'enrollments';
-    protected static ?string $title = 'Enrolled Courses';
+    protected static ?string $title       = 'Enrolled Courses';
 
     public function form(Form $form): Form
     {
-        return $form->schema([]); // read-only
+        return $form->schema([]);
     }
 
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                // Eager load course + lessons in one query — kills N+1
+                $query->with(['course.lessons', 'course.level']);
+            })
             ->columns([
-                Tables\Columns\TextColumn::make('course.title')
+                TextColumn::make('course.title')
                     ->label('Course')
-                    ->searchable(),
+                    ->searchable()
+                    ->limit(35),
 
-                Tables\Columns\TextColumn::make('course.level.name')
+                TextColumn::make('course.level.name')
                     ->label('Level')
                     ->badge(),
 
-                Tables\Columns\TextColumn::make('enrolled_at')
+                TextColumn::make('enrolled_at')
                     ->dateTime()
                     ->sortable(),
 
-                // Completion % — computed per row
-                Tables\Columns\TextColumn::make('completion_percentage')
+                TextColumn::make('completion_pct')
                     ->label('Progress')
                     ->getStateUsing(function ($record): string {
-                        $user   = $record->user;
-                        $course = $record->course;
-                        return $course->completionPercentageFor($user) . '%';
+                        // Scoped to THIS user + THIS course only — no cross-user leaks
+                        $userId    = $this->getOwnerRecord()->id;
+                        $lessonIds = $record->course->lessons->pluck('id');
+                        $total     = $lessonIds->count();
+
+                        if ($total === 0) return '0%';
+
+                        $completed = LessonProgress::where('user_id', $userId)
+                            ->whereIn('lesson_id', $lessonIds)
+                            ->whereNotNull('completed_at')
+                            ->count();
+
+                        return round(($completed / $total) * 100) . '%';
                     })
                     ->badge()
                     ->color(fn (string $state): string => match (true) {
@@ -49,10 +64,17 @@ class EnrollmentsRelationManager extends RelationManager
                         default              => 'gray',
                     }),
 
-                Tables\Columns\IconColumn::make('completed')
+                TextColumn::make('course_completed')
                     ->label('Completed')
-                    ->getStateUsing(fn ($record) => $record->user->hasCompletedCourse($record->course_id))
-                    ->boolean(),
-            ]);
+                    ->getStateUsing(fn ($record): string =>
+                        $this->getOwnerRecord()->hasCompletedCourse($record->course_id)
+                            ? '✓ Done' : '—'
+                    )
+                    ->badge()
+                    ->color(fn (string $state): string =>
+                        $state === '✓ Done' ? 'success' : 'gray'
+                    ),
+            ])
+            ->defaultSort('enrolled_at', 'desc');
     }
 }

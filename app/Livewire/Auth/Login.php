@@ -20,24 +20,24 @@ class Login extends Component
     public int  $attempts     = 0;
 
     public function login(): void
-    {
-        $this->validate();
+{
+    $this->validate();
 
-        if (! Auth::attempt(
-            ['email' => $this->email, 'password' => $this->password],
-            $this->remember
-        )) {
-            $this->attempts++;
-            $this->password = '';
+    if (! Auth::attempt(
+        ['email' => $this->email, 'password' => $this->password],
+        $this->remember
+    )) {
+        $this->password = '';
+        $this->dispatch('login-failed');
 
-            throw ValidationException::withMessages([
-                'email' => 'These credentials do not match our records.',
-            ]);
-        }
-
-        session()->regenerate();
-        $this->redirect(route('home'), navigate: true);
+        throw ValidationException::withMessages([
+            'email' => 'These credentials do not match our records.',
+        ]);
     }
+
+    session()->regenerate();
+    $this->redirect(route('home'), navigate: true);
+}
 
     public function render()
     {

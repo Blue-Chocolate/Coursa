@@ -49,20 +49,17 @@
     {{-- Right panel --}}
     <div class="flex-1 flex items-center justify-center px-6 py-12 bg-stone-100 dark:bg-zinc-950 relative z-10">
         <div class="w-full max-w-md"
-             x-data="{
-                 mounted: false,
-                 attempts: @entangle('attempts'),
-                 shaking: false,
-                 init() {
-                     setTimeout(() => this.mounted = true, 50);
-                     this.$watch('attempts', (val) => {
-                         if (val > 0) {
-                             this.shaking = true;
-                             setTimeout(() => this.shaking = false, 600);
-                         }
-                     });
-                 }
-             }">
+            x-data="{
+    mounted: false,
+    shaking: false,
+    init() {
+        setTimeout(() => this.mounted = true, 50);
+        Livewire.on('login-failed', () => {
+            this.shaking = true;
+            setTimeout(() => this.shaking = false, 600);
+        });
+    }
+}"
 
             <div :class="mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'"
                  class="transition-all duration-500">

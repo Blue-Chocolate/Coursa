@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\EnrollmentController\EnrollmentController;
 use App\Http\Controllers\Api\LessonController\LessonController;
 use App\Http\Controllers\Api\LessonController\ProgressController;
 use Illuminate\Support\Facades\Route;
+use App\Livewire\Auth\Login;
+use App\Livewire\Auth\Register;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 Route::prefix('auth')->group(function () {
@@ -32,3 +34,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // User's enrolled courses
     Route::get('my/courses', [CourseController::class, 'enrolled']);
 });
+
+
+    Route::get('/register', Register::class)->name('register');
+    Route::get('/login',    Login::class)->name('login');
+    
+Route::middleware('auth')->post('/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+})->name('logout');

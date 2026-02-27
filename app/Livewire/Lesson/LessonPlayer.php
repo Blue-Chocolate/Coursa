@@ -7,8 +7,10 @@ use App\Actions\RecordLessonStartedAction;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonProgress;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
 class LessonPlayer extends Component
 {
     public Course  $course;
@@ -17,22 +19,29 @@ class LessonPlayer extends Component
     public bool    $isEnrolled   = false;
     public int     $watchSeconds = 0;
 
-    public function mount(Course $course, Lesson $lesson): void
+    // ✅ 'slug' + 'lesson' match route segments /courses/{slug}/lessons/{lesson}
+    // Livewire auto-resolves Lesson model via route model binding
+    public function mount(string $slug, Lesson $lesson): void
     {
-        $this->course  = $course;
-        $this->lesson  = $lesson;
+        $this->course = Course::published()
+            ->where('slug', $slug)
+            ->firstOrFail();
+
+        // Ensure lesson belongs to this course
+        abort_if($lesson->course_id !== $this->course->id, 404);
+
+        $this->lesson = $lesson;
 
         $user = auth()->user();
 
         // Access guard
         if (! $lesson->is_free_preview) {
-            abort_unless($user, 401);
-            abort_unless($user->isEnrolledIn($course->id), 403);
+            abort_unless($user, 401, 'Please login to access this lesson.');
+            abort_unless($user->isEnrolledIn($this->course->id), 403, 'Enroll to access this lesson.');
         }
 
-        $this->isEnrolled = $user?->isEnrolledIn($course->id) ?? false;
+        $this->isEnrolled = $user?->isEnrolledIn($this->course->id) ?? false;
 
-        // Load existing progress
         if ($user) {
             $progress           = LessonProgress::where('user_id', $user->id)
                 ->where('lesson_id', $lesson->id)
@@ -40,16 +49,11 @@ class LessonPlayer extends Component
             $this->isCompleted  = (bool) $progress?->completed_at;
             $this->watchSeconds = $progress?->watch_seconds ?? 0;
 
-            // Record started
-            if ($user && ($lesson->is_free_preview || $this->isEnrolled)) {
-                app(RecordLessonStartedAction::class)->execute($user, $lesson);
-            }
+            // Record lesson as started
+            app(RecordLessonStartedAction::class)->execute($user, $lesson);
         }
     }
 
-    /**
-     * Called by Alpine.js periodically to save watch time.
-     */
     public function updateWatchSeconds(int $seconds): void
     {
         if (! auth()->check()) return;
@@ -61,9 +65,6 @@ class LessonPlayer extends Component
             ->update(['watch_seconds' => $seconds]);
     }
 
-    /**
-     * Triggered by the completion confirmation modal (Alpine.js Feature #2).
-     */
     public function markComplete(): void
     {
         if (! auth()->check() || $this->isCompleted) return;
@@ -71,12 +72,7 @@ class LessonPlayer extends Component
         app(MarkLessonCompletedAction::class)->execute(auth()->user(), $this->lesson);
 
         $this->isCompleted = true;
-        $this->dispatch('lesson-completed', percentage: $this->getCoursePercentage());
-    }
-
-    private function getCoursePercentage(): int
-    {
-        return $this->course->completionPercentageFor(auth()->user());
+        $this->dispatch('lesson-completed', percentage: $this->course->completionPercentageFor(auth()->user()));
     }
 
     public function render()

@@ -4,7 +4,6 @@ namespace App\Livewire\Course;
 
 use App\Actions\EnrollUserAction;
 use App\Models\Course;
-use App\Repositories\EnrollmentRepository;
 use Livewire\Component;
 
 class EnrollButton extends Component
@@ -21,16 +20,16 @@ class EnrollButton extends Component
     public function enroll(): void
     {
         if (! auth()->check()) {
-            $this->redirectRoute('login');
+            $this->redirect(route('login'));
             return;
         }
 
         try {
             app(EnrollUserAction::class)->execute(auth()->user(), $this->course);
             $this->isEnrolled = true;
-            $this->dispatch('enrolled'); // notify parent components
+            $this->dispatch('enrolled');
         } catch (\Exception $e) {
-            session()->flash('error', $e->getMessage());
+            $this->addError('enroll', $e->getMessage());
         }
     }
 

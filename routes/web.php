@@ -1,28 +1,29 @@
 <?php
 
-use App\Models\Course;
-use App\Models\Lesson;
+use App\Livewire\Auth\Login;
+use App\Livewire\Auth\Register;
+use App\Livewire\Course\CourseDetail;
+use App\Livewire\Course\MyCourses;
+use App\Livewire\Home\CourseList;
+use App\Livewire\Lesson\LessonPlayer;
 use Illuminate\Support\Facades\Route;
 
-// Home
-Route::get('/', fn () => view('pages.home'))->name('home');
-
-// Course detail
-Route::get('/courses/{slug}', function (string $slug) {
-    $course = Course::published()->where('slug', $slug)->with(['level', 'lessons'])->firstOrFail();
-    return view('pages.course', compact('course'));
-})->name('course.show');
-
-// Lesson player
-Route::get('/courses/{slug}/lessons/{lesson}', function (string $slug, Lesson $lesson) {
-    $course = Course::published()->where('slug', $slug)->firstOrFail();
-    abort_if($lesson->course_id !== $course->id, 404);
-    return view('pages.lesson', compact('course', 'lesson'));
-})->name('lesson.show');
-
-// My courses (authenticated)
-Route::middleware('auth')->group(function () {
-    Route::get('/my/courses', fn () => view('pages.my-courses'))->name('my.courses');
+Route::middleware('guest')->group(function () {
+    Route::get('/register', Register::class)->name('register');
+    Route::get('/login',    Login::class)->name('login');
 });
 
-// Auth (Laravel Breeze / Fortify handles these)
+Route::middleware('auth')->post('/logout', function () {
+    auth()->logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/');
+})->name('logout');
+
+Route::get('/',                                   CourseList::class)->name('home');
+Route::get('/courses/{slug}',                     CourseDetail::class)->name('course.show');
+Route::get('/courses/{slug}/lessons/{lesson}',    LessonPlayer::class)->name('lesson.show');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/my/courses', MyCourses::class)->name('my.courses');
+});

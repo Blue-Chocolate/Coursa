@@ -35,13 +35,3 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('my/courses', [CourseController::class, 'enrolled']);
 });
 
-
-    Route::get('/register', Register::class)->name('register');
-    Route::get('/login',    Login::class)->name('login');
-    
-Route::middleware('auth')->post('/logout', function () {
-    auth()->logout();
-    request()->session()->invalidate();
-    request()->session()->regenerateToken();
-    return redirect('/');
-})->name('logout');

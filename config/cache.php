@@ -15,7 +15,8 @@ return [
     |
     */
 
-    'default' => env('CACHE_STORE', 'database'),
+   'default' => env('CACHE_DRIVER', 'redis'),
+
 
     /*
     |--------------------------------------------------------------------------
@@ -69,6 +70,12 @@ return [
                     'port' => env('MEMCACHED_PORT', 11211),
                     'weight' => 100,
                 ],
+                'stores' => [
+    'redis' => [
+        'driver'     => 'redis',
+        'connection' => 'cache',   // ← uses DB 1
+    ],
+],
             ],
         ],
 

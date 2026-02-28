@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Events\NewLessonAdded;
 
 class Lesson extends Model
 {   use HasFactory;
@@ -68,4 +69,16 @@ class Lesson extends Model
     {
         return $this->progress()->where('user_id', $user->id)->first();
     }
+    protected static function boot(): void
+{
+    parent::boot();
+
+    // Only fire for truly new records (not seeds/factories if desired).
+    static::created(function (Lesson $lesson) {
+        // Only notify if the parent course is published so drafts don't spam.
+        if ($lesson->course?->isPublished()) {
+            NewLessonAdded::dispatch($lesson);
+        }
+    });
+}
 }

@@ -22,4 +22,11 @@ class Enrollment extends Model
     {
         return $this->belongsTo(Course::class);
     }
+    protected static function boot(): void
+{
+    parent::boot();
+
+    static::created(fn ($e)  => cache()->forget("user:{$e->user_id}:enrolled:{$e->course_id}"));
+    static::deleted(fn ($e)  => cache()->forget("user:{$e->user_id}:enrolled:{$e->course_id}"));
+}
 }

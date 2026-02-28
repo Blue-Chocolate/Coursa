@@ -1,7 +1,5 @@
 import './bootstrap';
-
-// Don't import or start Alpine yourself — Livewire owns it.
-// Just register your components before Livewire boots Alpine.
+import './lesson-player';
 
 document.addEventListener('alpine:init', () => {
     Alpine.data('darkMode', () => ({
@@ -12,7 +10,6 @@ document.addEventListener('alpine:init', () => {
         },
 
         toggle() {
-            console.log('toggle called');
             this.isDark = !this.isDark;
             document.documentElement.classList.toggle('dark', this.isDark);
             localStorage.setItem('theme', this.isDark ? 'dark' : 'light');

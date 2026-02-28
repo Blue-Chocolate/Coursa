@@ -82,4 +82,20 @@ class LessonPlayer extends Component
             'previous' => $this->lesson->previous(),
         ]);
     }
+    public function getVideoEmbedId(): string
+{
+    $url = $this->lesson->video_url;
+
+    // YouTube
+    if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $url, $m)) {
+        return $m[1];
+    }
+
+    // Vimeo
+    if (preg_match('/vimeo\.com\/(\d+)/', $url, $m)) {
+        return $m[1];
+    }
+
+    return $url; // fallback for direct video
+}
 }

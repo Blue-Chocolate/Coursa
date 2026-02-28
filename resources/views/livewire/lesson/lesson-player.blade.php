@@ -14,20 +14,22 @@
         <span class="text-zinc-600 dark:text-zinc-300">{{ $lesson->title }}</span>
     </nav>
 
-    {{-- Plyr video player --}}
-    <div class="rounded-2xl overflow-hidden bg-black mb-6 aspect-video">
-        <div x-ref="player">
-            @if(str_contains($lesson->video_url, 'youtube') || str_contains($lesson->video_url, 'youtu.be'))
-                <div data-plyr-provider="youtube" data-plyr-embed-id="{{ $lesson->video_url }}"></div>
-            @elseif(str_contains($lesson->video_url, 'vimeo'))
-                <div data-plyr-provider="vimeo" data-plyr-embed-id="{{ $lesson->video_url }}"></div>
-            @else
-                <video controls>
-                    <source src="{{ $lesson->video_url }}" />
-                </video>
-            @endif
-        </div>
+  {{-- Plyr video player --}}
+<div class="rounded-2xl overflow-hidden bg-black mb-6 aspect-video">
+    <div x-ref="player">
+        @if(str_contains($lesson->video_url, 'youtube') || str_contains($lesson->video_url, 'youtu.be'))
+            <div data-plyr-provider="youtube"
+                 data-plyr-embed-id="{{ $this->getVideoEmbedId() }}"></div>
+        @elseif(str_contains($lesson->video_url, 'vimeo'))
+            <div data-plyr-provider="vimeo"
+                 data-plyr-embed-id="{{ $this->getVideoEmbedId() }}"></div>
+        @else
+            <video controls>
+                <source src="{{ $lesson->video_url }}" />
+            </video>
+        @endif
     </div>
+</div>
 
     {{-- Lesson header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

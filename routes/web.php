@@ -7,6 +7,7 @@ use App\Livewire\Course\MyCourses;
 use App\Livewire\Home\CourseList;
 use App\Livewire\Lesson\LessonPlayer;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\NotificationController\NotificationController;
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', Register::class)->name('register');
@@ -26,4 +27,11 @@ Route::get('/courses/{slug}/lessons/{lesson}',    LessonPlayer::class)->name('le
 
 Route::middleware('auth')->group(function () {
     Route::get('/my/courses', MyCourses::class)->name('my.courses');
+});
+
+// routes/web.php
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications',            [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/read-all',  [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 });

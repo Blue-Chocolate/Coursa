@@ -55,14 +55,15 @@ class User extends Authenticatable implements FilamentUser
         return $this->is_admin;
     }
 
-    public function isEnrolledIn(int $courseId): bool
-    {
-        // Cache per-request to avoid N+1 on lesson lists
-        return $this->enrollments()
-            ->where('course_id', $courseId)
-            ->exists();
-    }
-
+    
+public function isEnrolledIn(int $courseId): bool
+{
+    return cache()->remember(
+        "user:{$this->id}:enrolled:{$courseId}",
+        now()->addMinutes(30),
+        fn () => $this->enrollments()->where('course_id', $courseId)->exists()
+    );
+}
     public function hasCompletedCourse(int $courseId): bool
     {
         return $this->courseCompletions()
@@ -76,8 +77,18 @@ class User extends Authenticatable implements FilamentUser
             ->where('lesson_id', $lessonId)
             ->first();
     }
-        public function canAccessPanel(Panel $panel): bool
-    {
-        return $this->is_admin;
-    }
+     public function canAccessPanel(Panel $panel): bool
+{
+    $result = $this->is_admin === true;
+    
+    \Log::info('canAccessPanel check', [
+        'user_id'  => $this->id,
+        'email'    => $this->email,
+        'is_admin' => $this->is_admin,
+        'raw'      => $this->getRawOriginal('is_admin'),
+        'result'   => $result,
+    ]);
+
+    return $result;
+}
 }

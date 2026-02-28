@@ -35,3 +35,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/notifications/read-all',  [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markRead'])->name('notifications.mark-read');
 });
+
+Route::middleware('auth')->group(function () {
+    Route::post('/lessons/{lesson}/complete', [
+        \App\Http\Controllers\Api\LessonController\LessonController::class, 'complete'
+    ])->name('lesson.complete');
+});
+
+// In routes/web.php — outside any auth group:
+Route::post('/courses/{slug}/enroll', [
+    \App\Http\Controllers\Api\LessonController\LessonController::class, 'enroll'
+])->name('course.enroll')->middleware('auth');

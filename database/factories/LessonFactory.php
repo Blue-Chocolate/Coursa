@@ -18,7 +18,6 @@ class LessonFactory extends Factory
             'order'            => $order++,
             'duration_seconds' => $this->faker->numberBetween(120, 3600),
             'is_free_preview'  => false,
-            'description'      => $this->faker->paragraph(),
         ];
     }
 

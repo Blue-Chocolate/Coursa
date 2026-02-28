@@ -13,7 +13,7 @@ describe('RecordLessonStartedAction', function () {
         $user   = User::factory()->create();
         $lesson = Lesson::factory()->create();
 
-        $action = new RecordLessonStartedAction();
+        $action = app(RecordLessonStartedAction::class);
         $action->execute($user, $lesson);
 
         $this->assertDatabaseHas('lesson_progress', [
@@ -34,7 +34,7 @@ describe('RecordLessonStartedAction', function () {
             'completed_at'   => now(),
         ]);
 
-        $action = new RecordLessonStartedAction();
+        $action = app(RecordLessonStartedAction::class);
         $action->execute($user, $lesson);
 
         $progress = LessonProgress::where('user_id', $user->id)

@@ -29,7 +29,7 @@ describe('MarkLessonCompletedAction', function () {
             'lesson_id' => $lesson->id,
         ]);
 
-        $action = new MarkLessonCompletedAction();
+        $action = app(MarkLessonCompletedAction::class);
         $action->execute($user, $lesson);
 
         $this->assertDatabaseHas('lesson_progress', [
@@ -61,7 +61,7 @@ describe('MarkLessonCompletedAction', function () {
             'lesson_id' => $lesson->id,
         ]);
 
-        $action = new MarkLessonCompletedAction();
+        $action = app(MarkLessonCompletedAction::class);
         $action->execute($user, $lesson);
         $action->execute($user, $lesson);
 

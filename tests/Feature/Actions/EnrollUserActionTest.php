@@ -12,7 +12,7 @@ describe('EnrollUserAction', function () {
         $user   = User::factory()->create();
         $course = Course::factory()->create();
 
-        $action = new EnrollUserAction();
+        $action = app(EnrollUserAction::class);
         $action->execute($user, $course);
 
         $this->assertDatabaseHas('enrollments', [
@@ -25,7 +25,7 @@ describe('EnrollUserAction', function () {
         $user   = User::factory()->create();
         $course = Course::factory()->create();
 
-        $action = new EnrollUserAction();
+        $action = app(EnrollUserAction::class);
         $action->execute($user, $course);
         $action->execute($user, $course); // second call
 
@@ -39,7 +39,7 @@ describe('EnrollUserAction', function () {
         $user   = User::factory()->create();
         $course = Course::factory()->create();
 
-        $action = new EnrollUserAction();
+        $action = app(EnrollUserAction::class);
         $action->execute($user, $course);
 
         $enrollment = Enrollment::where('user_id', $user->id)

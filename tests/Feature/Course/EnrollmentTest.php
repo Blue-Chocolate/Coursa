@@ -9,7 +9,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 describe('Course Enrollment', function () {
 
     it('guest cannot enroll', function () {
-        $course = Course::factory()->create(['is_published' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
 
         $this->post("/courses/{$course->slug}/enroll")
             ->assertRedirect('/login');
@@ -17,7 +17,7 @@ describe('Course Enrollment', function () {
 
     it('authenticated user can enroll in a published course', function () {
         $user   = User::factory()->create();
-        $course = Course::factory()->create(['is_published' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
 
         $this->actingAs($user)
             ->post("/courses/{$course->slug}/enroll")
@@ -31,7 +31,7 @@ describe('Course Enrollment', function () {
 
     it('user cannot enroll twice', function () {
         $user   = User::factory()->create();
-        $course = Course::factory()->create(['is_published' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
 
         $this->actingAs($user)->post("/courses/{$course->slug}/enroll");
         $this->actingAs($user)->post("/courses/{$course->slug}/enroll");

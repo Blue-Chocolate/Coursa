@@ -12,7 +12,7 @@ describe('Lesson Progress', function () {
 
     it('enrolled user can access a paid lesson', function () {
         $user   = User::factory()->create();
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create(['is_free_preview' => false]);
 
         Enrollment::factory()->create([
@@ -26,7 +26,7 @@ describe('Lesson Progress', function () {
     });
 
     it('guest can access a free preview lesson', function () {
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create(['is_free_preview' => true]);
 
         $this->get("/courses/{$course->slug}/lessons/{$lesson->id}")
@@ -34,7 +34,7 @@ describe('Lesson Progress', function () {
     });
 
     it('guest cannot access a paid lesson', function () {
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create(['is_free_preview' => false]);
 
         $this->get("/courses/{$course->slug}/lessons/{$lesson->id}")
@@ -43,7 +43,7 @@ describe('Lesson Progress', function () {
 
     it('non-enrolled user cannot access a paid lesson', function () {
         $user   = User::factory()->create();
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create(['is_free_preview' => false]);
 
         $this->actingAs($user)
@@ -55,7 +55,7 @@ describe('Lesson Progress', function () {
         Mail::fake();
 
         $user   = User::factory()->create();
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create();
 
         Enrollment::factory()->create([
@@ -83,7 +83,7 @@ describe('Lesson Progress', function () {
         Mail::fake();
 
         $user    = User::factory()->create();
-        $course  = Course::factory()->create(['status' => true]);
+        $course  = Course::factory()->create(['status' => 'published']);
         $lessons = Lesson::factory()->count(3)->for($course)->create();
 
         Enrollment::factory()->create([
@@ -113,7 +113,7 @@ describe('Lesson Progress', function () {
     it('no data leaks between users on same lesson', function () {
         $user1  = User::factory()->create();
         $user2  = User::factory()->create();
-        $course = Course::factory()->create(['status' => true]);
+        $course = Course::factory()->create(['status' => 'published']);
         $lesson = Lesson::factory()->for($course)->create();
 
         LessonProgress::create([

@@ -91,4 +91,8 @@ public function isEnrolledIn(int $courseId): bool
 
     return $result;
 }
+public function certificates(): HasMany
+{
+    return $this->hasMany(Certificate::class);
+}
 }

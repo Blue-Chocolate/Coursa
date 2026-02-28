@@ -80,5 +80,13 @@ class Lesson extends Model
             NewLessonAdded::dispatch($lesson);
         }
     });
+    static::deleted(function (Lesson $lesson) {
+    $lesson->course->enrollments()
+        ->with('user')
+        ->each(function ($enrollment) use ($lesson) {
+            app(\App\Actions\Courses\CheckCourseCompletionAction::class)
+                ->execute($enrollment->user, $lesson->course);
+        });
+});
 }
 }

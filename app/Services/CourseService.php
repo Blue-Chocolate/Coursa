@@ -18,16 +18,23 @@ class CourseService
         return $this->courses->allPublished($filters);
     }
 
-    public function findBySlug(string $slug): Course
-    {
-        $course = $this->courses->findBySlug($slug);
+    public function findBySlug(string $slug, ?User $user = null): Course
+{
+    $course = $this->courses->findBySlug($slug);
 
-        if (! $course) {
+    if (! $course) {
+        abort(404, 'Course not found.');
+    }
+
+    // Draft courses are only visible to enrolled users
+    if (! $course->isPublished()) {
+        if (! $user || ! $user->isEnrolledIn($course->id)) {
             abort(404, 'Course not found.');
         }
-
-        return $course;
     }
+
+    return $course;
+}
 
     public function enrolledCourses(User $user): LengthAwarePaginator
     {

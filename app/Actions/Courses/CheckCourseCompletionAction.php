@@ -7,7 +7,8 @@ use App\Models\Course;
 use App\Models\User;
 use App\Repositories\Contracts\ProgressRepositoryInterface;
 use Illuminate\Support\Facades\Mail;
-
+use App\Models\Certificate;
+use Illuminate\Support\Str;
 class CheckCourseCompletionAction
 {
     public function __construct(
@@ -36,10 +37,25 @@ class CheckCourseCompletionAction
         // This is the concurrency gate — only one email fires
         $inserted = $this->progress->insertCompletionOrIgnore($user->id, $course->id);
 
-        if ($inserted) {
-            Mail::to($user->email)->queue(new CourseCompletionMail($user, $course));
-        }
+      if ($inserted) {
+    $certificate = Certificate::insertOrIgnore([
+        'user_id'    => $user->id,
+        'course_id'  => $course->id,
+        'uuid'       => (string) Str::uuid(),
+        'issued_at'  => now(),
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
 
+    // Fetch it back so we can pass it to the mail
+    $certificate = Certificate::where('user_id', $user->id)
+        ->where('course_id', $course->id)
+        ->first();
+
+    Mail::to($user->email)->queue(
+        new CourseCompletionMail($user, $course, $certificate)
+    );
+}
         return $inserted;
     }
 }

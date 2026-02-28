@@ -16,12 +16,12 @@ class LessonController extends Controller
     ) {}
 
     public function show(Request $request, string $slug, int $lesson): JsonResponse
-    {
-        $course = $this->courses->findBySlug($slug);
-        $data   = $this->lessons->getLesson($course, $lesson, $request->user());
+{
+    $course = $this->courses->findBySlug($slug, $request->user()); // pass user
+    $data   = $this->lessons->getLesson($course, $lesson, $request->user());
 
-        return response()->json($data);
-    }
+    return response()->json($data);
+}
     public function complete(Request $request, int $lesson): JsonResponse
 {
     $lessonModel = \App\Models\Lesson::findOrFail($lesson);
@@ -33,7 +33,7 @@ class LessonController extends Controller
 }
 public function enroll(Request $request, string $slug): JsonResponse
 {
-    $course = $this->courses->findBySlug($slug);
+    $course = $this->courses->findBySlug($slug, $request->user()); // pass user
 
     app(\App\Actions\Enrollment\EnrollUserAction::class)
         ->execute($request->user(), $course);

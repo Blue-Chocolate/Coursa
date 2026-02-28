@@ -115,4 +115,8 @@ class Course extends Model
 
         return (int) round(($completed / $total) * 100);
     }
+    public function certificates(): HasMany
+{
+    return $this->hasMany(Certificate::class);
+}
 }

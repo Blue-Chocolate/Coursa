@@ -3,12 +3,14 @@
 namespace App\Actions\Courses;
 
 use App\Mail\CourseCompletionMail;
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\User;
 use App\Repositories\Contracts\ProgressRepositoryInterface;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
-use App\Models\Certificate;
 use Illuminate\Support\Str;
+
 class CheckCourseCompletionAction
 {
     public function __construct(
@@ -26,36 +28,61 @@ class CheckCourseCompletionAction
         $completedIds = $this->progress->completedLessonIds($user->id, $course->id);
         $lessonIds    = $course->lessons()->pluck('id');
 
-        // All current lessons must be in the completed set
         $allDone = $lessonIds->diff($completedIds)->isEmpty();
 
         if (! $allDone) {
             return false;
         }
 
-        // insertOrIgnore returns true only for the winning insert
-        // This is the concurrency gate — only one email fires
-        $inserted = $this->progress->insertCompletionOrIgnore($user->id, $course->id);
+        // ── Redis atomic lock ─────────────────────────────────────────────────
+        // Prevents two simultaneous completions from both generating certificates
+        // and queueing emails. Only the request that acquires the lock proceeds.
+        // The lock TTL (10s) is enough to cover the DB insert + mail dispatch.
+        $lock = Cache::lock(
+            "course_completion:{$user->id}:{$course->id}",
+            10
+        );
 
-      if ($inserted) {
-    $certificate = Certificate::insertOrIgnore([
-        'user_id'    => $user->id,
-        'course_id'  => $course->id,
-        'uuid'       => (string) Str::uuid(),
-        'issued_at'  => now(),
-        'created_at' => now(),
-        'updated_at' => now(),
-    ]);
+        if (! $lock->get()) {
+            // Another request is already processing this completion — bail out.
+            // The winning request will handle everything.
+            return false;
+        }
 
-    // Fetch it back so we can pass it to the mail
-    $certificate = Certificate::where('user_id', $user->id)
-        ->where('course_id', $course->id)
-        ->first();
+        try {
+            // insertOrIgnore is the final DB-level concurrency gate.
+            // Even if two requests somehow both acquire the lock (e.g. lock
+            // expired before insert), only one row can be inserted.
+            $inserted = $this->progress->insertCompletionOrIgnore($user->id, $course->id);
 
-    Mail::to($user->email)->queue(
-        new CourseCompletionMail($user, $course, $certificate)
-    );
-}
-        return $inserted;
+            if (! $inserted) {
+                // Already completed by a previous request — nothing to do.
+                return false;
+            }
+
+            // Issue certificate atomically with completion
+            Certificate::insertOrIgnore([
+                'user_id'    => $user->id,
+                'course_id'  => $course->id,
+                'uuid'       => (string) Str::uuid(),
+                'issued_at'  => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $certificate = Certificate::where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->first();
+
+            Mail::to($user->email)->queue(
+                new CourseCompletionMail($user, $course, $certificate)
+            );
+
+            return true;
+
+        } finally {
+            // Always release the lock — even if an exception is thrown
+            $lock->release();
+        }
     }
 }

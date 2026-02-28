@@ -7,6 +7,7 @@ use App\Models\Enrollment;
 use App\Models\User;
 use App\Repositories\Contracts\EnrollmentRepositoryInterface;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class EnrollUserAction
 {
@@ -14,17 +15,27 @@ class EnrollUserAction
         private EnrollmentRepositoryInterface $enrollments,
     ) {}
 
-    /**
-     * @throws \Exception if course is not published
-     */
     public function execute(User $user, Course $course): Enrollment
     {
-        if (! $course->isPublished()) {
-            throw new \Exception('Cannot enroll in a draft course.');
-        }
+        Gate::authorize('enroll', $course);
 
-        // DB transaction + unique constraint = safe under concurrency
         return DB::transaction(function () use ($user, $course) {
+            // Pessimistic lock on the user row — serializes concurrent enrollment
+            // attempts for the same user. Second request waits for first to commit,
+            // then sees the existing enrollment and returns it instead of duplicating.
+            DB::table('users')
+                ->where('id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            // Re-check inside the lock — the state may have changed while waiting
+            $existing = $this->enrollments->findByUserAndCourse($user->id, $course->id);
+
+            if ($existing) {
+                // Idempotent — return existing enrollment instead of throwing
+                return $existing;
+            }
+
             return $this->enrollments->create($user->id, $course->id);
         });
     }

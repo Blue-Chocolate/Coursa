@@ -46,3 +46,7 @@ Route::middleware('auth')->group(function () {
 Route::post('/courses/{slug}/enroll', [
     \App\Http\Controllers\Api\LessonController\LessonController::class, 'enroll'
 ])->name('course.enroll')->middleware('auth');
+
+Route::get('/certificates/{uuid}', [
+    \App\Http\Controllers\CertificateController::class, 'show'
+])->name('certificate.show');

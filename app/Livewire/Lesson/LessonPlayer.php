@@ -13,33 +13,25 @@ use Livewire\Component;
 #[Layout('components.layouts.app')]
 class LessonPlayer extends Component
 {
-    public Course  $course;
-    public Lesson  $lesson;
-    public bool    $isCompleted  = false;
-    public bool    $isEnrolled   = false;
-    public int     $watchSeconds = 0;
+    public Course $course;
+    public Lesson $lesson;
+    public bool   $isCompleted  = false;
+    public bool   $isEnrolled   = false;
+    public int    $watchSeconds = 0;
 
-    // ✅ 'slug' + 'lesson' match route segments /courses/{slug}/lessons/{lesson}
-    // Livewire auto-resolves Lesson model via route model binding
     public function mount(string $slug, Lesson $lesson): void
     {
         $this->course = Course::published()
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Ensure lesson belongs to this course
         abort_if($lesson->course_id !== $this->course->id, 404);
 
         $this->lesson = $lesson;
 
+        $this->authorize('view', $lesson);
+
         $user = auth()->user();
-
-        // Access guard
-        if (! $lesson->is_free_preview) {
-            abort_unless($user, 401, 'Please login to access this lesson.');
-            abort_unless($user->isEnrolledIn($this->course->id), 403, 'Enroll to access this lesson.');
-        }
-
         $this->isEnrolled = $user?->isEnrolledIn($this->course->id) ?? false;
 
         if ($user) {
@@ -49,30 +41,39 @@ class LessonPlayer extends Component
             $this->isCompleted  = (bool) $progress?->completed_at;
             $this->watchSeconds = $progress?->watch_seconds ?? 0;
 
-            // Record lesson as started
             app(RecordLessonStartedAction::class)->execute($user, $lesson);
         }
     }
 
+    /**
+     * Called from Alpine via $wire.updateWatchSeconds(seconds).
+     * The frontend debounces this to fire at most every 5 seconds.
+     * The repository uses a WHERE watch_seconds < :seconds guard so
+     * concurrent calls never regress the value.
+     */
     public function updateWatchSeconds(int $seconds): void
     {
         if (! auth()->check()) return;
 
         $this->watchSeconds = $seconds;
 
-        LessonProgress::where('user_id', auth()->id())
-            ->where('lesson_id', $this->lesson->id)
-            ->update(['watch_seconds' => $seconds]);
+        app(\App\Repositories\Contracts\ProgressRepositoryInterface::class)
+            ->updateWatchSeconds(auth()->id(), $this->lesson->id, $seconds);
     }
 
     public function markComplete(): void
     {
-        if (! auth()->check() || $this->isCompleted) return;
+        if ($this->isCompleted) return;
+
+        $this->authorize('complete', $this->lesson);
 
         app(MarkLessonCompletedAction::class)->execute(auth()->user(), $this->lesson);
 
         $this->isCompleted = true;
-        $this->dispatch('lesson-completed', percentage: $this->course->completionPercentageFor(auth()->user()));
+        $this->dispatch(
+            'lesson-completed',
+            percentage: $this->course->completionPercentageFor(auth()->user())
+        );
     }
 
     public function render()
@@ -82,20 +83,19 @@ class LessonPlayer extends Component
             'previous' => $this->lesson->previous(),
         ]);
     }
+
     public function getVideoEmbedId(): string
-{
-    $url = $this->lesson->video_url;
+    {
+        $url = $this->lesson->video_url;
 
-    // YouTube
-    if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $url, $m)) {
-        return $m[1];
+        if (preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $url, $m)) {
+            return $m[1];
+        }
+
+        if (preg_match('/vimeo\.com\/(\d+)/', $url, $m)) {
+            return $m[1];
+        }
+
+        return $url;
     }
-
-    // Vimeo
-    if (preg_match('/vimeo\.com\/(\d+)/', $url, $m)) {
-        return $m[1];
-    }
-
-    return $url; // fallback for direct video
-}
 }

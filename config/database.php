@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -142,36 +142,31 @@ return [
     |
     */
 
-    'redis' => [
+'redis' => [
     'client' => env('REDIS_CLIENT', 'predis'),
 
     'default' => [
+        'scheme'   => env('REDIS_SCHEME', 'tls'),
         'host'     => env('REDIS_HOST', '127.0.0.1'),
         'password' => env('REDIS_PASSWORD', null),
         'port'     => env('REDIS_PORT', 6379),
-        'database' => 0,   // general cache
+        'database' => 0,
     ],
 
-         'cache' => [
+    'cache' => [
+        'scheme'   => env('REDIS_SCHEME', 'tls'),
         'host'     => env('REDIS_HOST', '127.0.0.1'),
         'password' => env('REDIS_PASSWORD', null),
         'port'     => env('REDIS_PORT', 6379),
-        'database' => 1,   // cache isolated from sessions
+        'database' => 0,
     ],
-     'sessions' => [
+
+    'sessions' => [
+        'scheme'   => env('REDIS_SCHEME', 'tls'),
         'host'     => env('REDIS_HOST', '127.0.0.1'),
         'password' => env('REDIS_PASSWORD', null),
         'port'     => env('REDIS_PORT', 6379),
-        'database' => 2,   // sessions isolated
+        'database' => 0,
     ],
-
-    'queues' => [
-        'host'     => env('REDIS_HOST', '127.0.0.1'),
-        'password' => env('REDIS_PASSWORD', null),
-        'port'     => env('REDIS_PORT', 6379),
-        'database' => 3,   // queue jobs isolated
-    ],
-
-    ],
-
+],
 ];

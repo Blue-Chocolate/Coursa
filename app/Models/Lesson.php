@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
+use App\Events\NewLessonAdded;
+use App\Jobs\CheckUserCourseCompletionJob;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Events\NewLessonAdded;
 
 class Lesson extends Model
-{   use HasFactory;
+{
+    use HasFactory;
+
     protected $fillable = [
         'course_id',
         'title',
@@ -69,24 +72,36 @@ class Lesson extends Model
     {
         return $this->progress()->where('user_id', $user->id)->first();
     }
-    protected static function boot(): void
-{
-    parent::boot();
 
-    // Only fire for truly new records (not seeds/factories if desired).
-    static::created(function (Lesson $lesson) {
-        // Only notify if the parent course is published so drafts don't spam.
-        if ($lesson->course?->isPublished()) {
-            NewLessonAdded::dispatch($lesson);
-        }
-    });
-    static::deleted(function (Lesson $lesson) {
-    $lesson->course->enrollments()
-        ->with('user')
-        ->each(function ($enrollment) use ($lesson) {
-            app(\App\Actions\Courses\CheckCourseCompletionAction::class)
-                ->execute($enrollment->user, $lesson->course);
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        // Fire event when a new lesson is added to a published course
+        static::created(function (Lesson $lesson) {
+            if ($lesson->course?->isPublished()) {
+                NewLessonAdded::dispatch($lesson);
+            }
         });
-});
-}
+
+        // When a lesson is deleted, re-evaluate completion for all enrolled users.
+        // Chunked into queue jobs to avoid timing out on large courses.
+        // Example: 5,000 enrolled users = 50 jobs of 100 users each, not 1 blocking request.
+        static::deleted(function (Lesson $lesson) {
+            $courseId = $lesson->course_id;
+
+            $lesson->course
+                ->enrollments()
+                ->select('user_id')
+                ->chunk(100, function ($enrollments) use ($courseId) {
+                    foreach ($enrollments as $enrollment) {
+                        CheckUserCourseCompletionJob::dispatch(
+                            $enrollment->user_id,
+                            $courseId
+                        )->onQueue('completions');
+                    }
+                });
+        });
+    }
 }

@@ -1,43 +1,68 @@
 <?php
 
-namespace App\Services;
+namespace App\Mail;
 
+use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\User;
-use App\Repositories\Contracts\CourseRepositoryInterface;
-use Illuminate\Pagination\LengthAwarePaginator;
+use App\Services\CertificateService;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
 
-class CourseService
+class CourseCompletionMail extends Mailable implements ShouldQueue
 {
+    use Queueable, SerializesModels;
+
     public function __construct(
-        private CourseRepositoryInterface $courses,
+        public User        $user,
+        public Course      $course,
+        public Certificate $certificate,
     ) {}
 
-    public function listPublished(array $filters = []): LengthAwarePaginator
+    public function envelope(): Envelope
     {
-        return $this->courses->allPublished($filters);
+        return new Envelope(subject: "You completed: {$this->course->title} 🎉");
     }
 
+    public function content(): Content
+    {
+        return new Content(
+            view: 'emails.course-completion',
+            with: [
+                'user'        => $this->user,
+                'course'      => $this->course,
+                'certificate' => $this->certificate,
+            ]
+        );
+    }
+
+    public function attachments(): array
+    {
+        $path = app(CertificateService::class)
+            ->generatePdf($this->user, $this->course, $this->certificate);
+
+        return [
+            Attachment::fromPath($path)
+                ->as("certificate-{$this->course->slug}.pdf")
+                ->withMime('application/pdf'),
+        ];
+    }
     public function findBySlug(string $slug, ?User $user = null): Course
 {
     $course = $this->courses->findBySlug($slug);
 
-    if (! $course) {
-        abort(404, 'Course not found.');
-    }
+    abort_if(! $course, 404, 'Course not found.');
 
-    // Draft courses are only visible to enrolled users
-    if (! $course->isPublished()) {
-        if (! $user || ! $user->isEnrolledIn($course->id)) {
-            abort(404, 'Course not found.');
-        }
+    // Policy returns 404 for draft courses to avoid leaking existence
+    if (! Gate::forUser($user)->allows('view', $course)) {
+        abort(404, 'Course not found.');
     }
 
     return $course;
 }
-
-    public function enrolledCourses(User $user): LengthAwarePaginator
-    {
-        return $this->courses->enrolledByUser($user->id);
-    }
 }

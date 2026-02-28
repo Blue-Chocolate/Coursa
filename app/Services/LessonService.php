@@ -17,27 +17,23 @@ class LessonService
         private ProgressRepositoryInterface  $progress,
     ) {}
 
-    public function getLesson(Course $course, int $lessonId, ?User $user): array
-    {
-        $lesson = $this->lessons->findInCourse($lessonId, $course->id);
+ public function getLesson(Course $course, int $lessonId, ?User $user): array
+{
+    $lesson = $this->lessons->findInCourse($lessonId, $course->id);
 
-        abort_if(! $lesson, 404, 'Lesson not found.');
+    abort_if(! $lesson, 404, 'Lesson not found.');
 
-        // Access control
-        if (! $lesson->is_free_preview) {
-            abort_if(! $user, 401, 'Login required to access this lesson.');
-            abort_unless(
-                $this->enrollments->isEnrolled($user->id, $course->id),
-                403,
-                'Enroll in the course to access this lesson.'
-            );
-        }
-
-        return [
-            'lesson'   => $lesson,
-            'next'     => $lesson->next(),
-            'previous' => $lesson->previous(),
-            'progress' => $user ? $this->progress->find($user->id, $lesson->id) : null,
-        ];
+    // Policy handles free preview, auth, and enrollment checks
+    if (! app(\Illuminate\Auth\Access\Gate::class)->inspect('view', $lesson)->allowed()) {
+        abort_if(! $user, 401, 'Login required.');
+        abort(403, 'Enroll in the course to access this lesson.');
     }
+
+    return [
+        'lesson'   => $lesson,
+        'next'     => $lesson->next(),
+        'previous' => $lesson->previous(),
+        'progress' => $user ? $this->progress->find($user->id, $lesson->id) : null,
+    ];
+}
 }

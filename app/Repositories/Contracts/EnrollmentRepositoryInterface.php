@@ -9,4 +9,6 @@ interface EnrollmentRepositoryInterface
     public function find(int $userId, int $courseId): ?Enrollment;
     public function create(int $userId, int $courseId): Enrollment;
     public function isEnrolled(int $userId, int $courseId): bool;
+    public function findByUserAndCourse(int $userId, int $courseId): ?Enrollment;
+
 }

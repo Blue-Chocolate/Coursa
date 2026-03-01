@@ -34,33 +34,25 @@ class CheckCourseCompletionAction
             return false;
         }
 
-        // ── Redis atomic lock ─────────────────────────────────────────────────
-        // Prevents two simultaneous completions from both generating certificates
-        // and queueing emails. Only the request that acquires the lock proceeds.
-        // The lock TTL (10s) is enough to cover the DB insert + mail dispatch.
+      
         $lock = Cache::lock(
             "course_completion:{$user->id}:{$course->id}",
             10
         );
 
         if (! $lock->get()) {
-            // Another request is already processing this completion — bail out.
-            // The winning request will handle everything.
+
             return false;
         }
 
         try {
-            // insertOrIgnore is the final DB-level concurrency gate.
-            // Even if two requests somehow both acquire the lock (e.g. lock
-            // expired before insert), only one row can be inserted.
+         
             $inserted = $this->progress->insertCompletionOrIgnore($user->id, $course->id);
 
             if (! $inserted) {
-                // Already completed by a previous request — nothing to do.
                 return false;
             }
 
-            // Issue certificate atomically with completion
             Certificate::insertOrIgnore([
                 'user_id'    => $user->id,
                 'course_id'  => $course->id,
@@ -81,7 +73,6 @@ class CheckCourseCompletionAction
             return true;
 
         } finally {
-            // Always release the lock — even if an exception is thrown
             $lock->release();
         }
     }

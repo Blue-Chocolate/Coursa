@@ -5,28 +5,26 @@ namespace App\Services;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\User;
-use Spatie\Browsershot\Browsershot;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Storage;
 
 class CertificateService
 {
     public function generatePdf(User $user, Course $course, Certificate $certificate): string
     {
-        $html = view('certificates.certificate', compact('user', 'course', 'certificate'))
-            ->render();
+        $pdf = Pdf::loadView('certificates.certificate', compact('user', 'course', 'certificate'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'dpi'                         => 150,
+                'defaultFont'                 => 'sans-serif',
+                'isHtml5ParserEnabled'        => true,
+                'isRemoteEnabled'             => true,  // allows loading images via URL
+            ]);
 
-        $path = storage_path("app/certificates/cert-{$certificate->uuid}.pdf");
+        $relativePath = "certificates/cert-{$certificate->uuid}.pdf";
 
-        // Ensure directory exists
-        if (! is_dir(storage_path('app/certificates'))) {
-            mkdir(storage_path('app/certificates'), 0755, true);
-        }
+        Storage::put($relativePath, $pdf->output());
 
-        Browsershot::html($html)
-            ->landscape()
-            ->format('A4')
-            ->margins(0, 0, 0, 0)
-            ->savePdf($path);
-
-        return $path;
+        return storage_path("app/{$relativePath}");
     }
 }

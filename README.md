@@ -1,59 +1,215 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Learnforward — Learn Anything
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+An online learning platform where users enroll in courses, track their progress, and earn certificates upon completion.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Table of Contents
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Project Overview](#project-overview)
+- [Tech Stack](#tech-stack)
+- [Requirements](#requirements)
+- [Installation & Setup](#installation--setup)
+- [Environment Variables](#environment-variables)
+- [Queue Setup](#queue-setup)
+- [Storage Setup](#storage-setup)
+- [Assumptions & Notes](#assumptions--notes)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Project Overview
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Learnforward is a full-stack web application built with Laravel. It allows learners to:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Browse and enroll in courses
+- Track lesson-by-lesson progress
+- Earn and download PDF certificates on course completion
+- Receive certificate emails automatically upon completion
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Tech Stack
 
-### Premium Partners
+| Layer | Technology |
+|---|---|
+| Backend | Laravel 10+ (PHP 8.2+) |
+| Frontend | Blade + Livewire / Filament Admin |
+| PDF Generation | barryvdh/laravel-dompdf |
+| Queue | Laravel Queue (database driver) |
+| Mail | SMTP (configured via .env) |
+| Hosting | Hostinger Shared Hosting |
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## Requirements
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+- PHP >= 8.2
+- Composer
+- MySQL 8+
+- Node.js & NPM (for frontend assets only)
+- A working SMTP mail account
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Installation & Setup
 
-## Security Vulnerabilities
+### 1. Clone the repository
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+git clone https://github.com/your-org/learnforward.git
+cd learnforward
+```
 
-## License
+### 2. Install PHP dependencies
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer install --no-dev --optimize-autoloader
+```
+
+### 3. Install frontend dependencies & build assets
+
+```bash
+npm install
+npm run build
+```
+
+### 4. Copy and configure environment file
+
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+### 5. Configure your `.env` file
+
+See [Environment Variables](#environment-variables) below.
+
+### 6. Run database migrations
+
+```bash
+php artisan migrate --force
+```
+
+### 7. Seed the database (optional)
+
+```bash
+php artisan db:seed
+```
+### 7. Run tests
+```bash
+php artisan test
+```
+
+### 8. Link storage
+
+```bash
+php artisan storage:link
+```
+
+### 9. Clear and cache config
+
+```bash
+php artisan optimize
+```
+
+---
+
+## Environment Variables
+
+Below are the key variables to configure in your `.env` file:
+
+```env
+APP_NAME=Learnforward
+APP_ENV=production
+APP_KEY=             # Generated by php artisan key:generate
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+
+# Database
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=your_database
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# Mail (SMTP)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.your-provider.com
+MAIL_PORT=465
+MAIL_USERNAME=your@email.com
+MAIL_PASSWORD=your_password
+MAIL_ENCRYPTION=ssl
+MAIL_FROM_ADDRESS=no-reply@yourdomain.com
+MAIL_FROM_NAME="Learnforward"
+
+# Queue
+QUEUE_CONNECTION=database
+
+# Filesystem
+FILESYSTEM_DISK=local
+```
+
+---
+
+## Queue Setup
+
+Learnforward uses Laravel queues to send course completion emails with PDF certificate attachments in the background.
+
+### Create the jobs table
+
+```bash
+php artisan queue:table
+php artisan migrate
+```
+
+### Run the queue worker
+
+```bash
+php artisan queue:work --tries=3 --timeout=60
+```
+
+### On shared hosting (Hostinger)
+
+Set up a cron job in your hosting panel to process the queue every minute:
+
+```
+* * * * * cd /path/to/public_html && php artisan schedule:run >> /dev/null 2>&1
+```
+
+And add this to `app/Console/Kernel.php`:
+
+```php
+$schedule->command('queue:work --stop-when-empty')->everyMinute()->withoutOverlapping();
+```
+
+### Clearing the queue (after code changes)
+
+```bash
+php artisan queue:clear
+php artisan queue:flush
+php artisan queue:restart
+```
+
+---
+
+## Storage Setup
+
+PDF certificates are generated in-memory and attached directly to emails — no persistent storage required. However, the storage directory must be writable:
+
+```bash
+chmod -R 775 storage
+chmod -R 775 bootstrap/cache
+```
+
+---
+
+## Assumptions & Notes
+
+- **PDF generation** uses `barryvdh/laravel-dompdf` (pure PHP). Spatie Browsershot is **not supported** on shared hosting as it requires Node.js and Puppeteer.
+- **Certificate PDFs** are generated as base64-encoded strings and embedded in the queue job payload. No temporary files are written to disk.
+- **Filament** is used for the admin panel. Admin users must be seeded or created manually via `php artisan tinker`.
+- **Soft deletes** are enabled on the `courses` table. Deleted courses will not appear to users but remain in the database.
+- **Slug uniqueness** is enforced including soft-deleted records to prevent URL collisions after restore.
+- The queue driver defaults to `database`. For higher traffic, switching to Redis is recommended.
+- Tested on **Hostinger shared hosting** with PHP 8.2.

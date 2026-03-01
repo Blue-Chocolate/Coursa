@@ -17,7 +17,6 @@ class RegisterUserAction
             'password' => Hash::make($data['password']),
         ]);
 
-        // Dispatched async — does not block the response
         Mail::to($user->email)->queue(new WelcomeMail($user));
 
         return $user;

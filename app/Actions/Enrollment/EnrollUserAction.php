@@ -20,9 +20,7 @@ class EnrollUserAction
         Gate::authorize('enroll', $course);
 
         return DB::transaction(function () use ($user, $course) {
-            // Pessimistic lock on the user row — serializes concurrent enrollment
-            // attempts for the same user. Second request waits for first to commit,
-            // then sees the existing enrollment and returns it instead of duplicating.
+            
             DB::table('users')
                 ->where('id', $user->id)
                 ->lockForUpdate()

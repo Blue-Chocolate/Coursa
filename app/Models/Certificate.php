@@ -15,4 +15,12 @@ class Certificate extends Model
         parent::boot();
         static::creating(fn ($cert) => $cert->uuid ??= Str::uuid());
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 }

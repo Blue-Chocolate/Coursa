@@ -12,9 +12,7 @@ class NotifyEnrolledUsers implements ShouldQueue
 {
     use InteractsWithQueue;
 
-    /**
-     * Chunk size to avoid loading thousands of enrollments into memory.
-     */
+  
     private const CHUNK_SIZE = 100;
 
     public function handle(NewLessonAdded $event): void

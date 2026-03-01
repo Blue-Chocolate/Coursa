@@ -8,6 +8,7 @@ use App\Livewire\Home\CourseList;
 use App\Livewire\Lesson\LessonPlayer;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\NotificationController\NotificationController;
+use App\Http\Controllers\Api\CertificateController\CertificateController;
 
 Route::middleware('guest')->group(function () {
     Route::get('/register', Register::class)->name('register');
@@ -48,5 +49,5 @@ Route::post('/courses/{slug}/enroll', [
 ])->name('course.enroll')->middleware('auth');
 
 Route::get('/certificates/{uuid}', [
-    \App\Http\Controllers\CertificateController::class, 'show'
+    CertificateController::class, 'show'
 ])->name('certificate.show');

@@ -30,4 +30,10 @@ class EnrollmentRepository implements EnrollmentRepositoryInterface
             ->where('course_id', $courseId)
             ->exists();
     }
+    public function findByUserAndCourse(int $userId, int $courseId): ?Enrollment
+{
+    return Enrollment::where('user_id', $userId)
+        ->where('course_id', $courseId)
+        ->first();
+}
 }
